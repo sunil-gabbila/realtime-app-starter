@@ -1,2 +1,2 @@
 /** Application and infrastructure configuration. */
-package com.demo.config;
+package com.kodnest.config;

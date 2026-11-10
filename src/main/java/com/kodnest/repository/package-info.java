@@ -1,2 +1,2 @@
 /** Persistence access interfaces and implementations. */
-package com.demo.repository;
+package com.kodnest.repository;

@@ -1,2 +1,2 @@
 /** Application and domain business logic. */
-package com.demo.service;
+package com.kodnest.service;

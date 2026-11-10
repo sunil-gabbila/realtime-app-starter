@@ -1,2 +1,2 @@
 /** Domain and persistence model types. */
-package com.demo.model;
+package com.kodnest.model;
