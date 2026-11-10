@@ -1,44 +1,62 @@
-# Real-time application starter
+# Kodnest Spring Boot API starter
 
-A practical baseline for a browser application that sends updates to connected users with low latency. This repository currently contains architecture and setup guidance; it does not yet implement a product-specific feature.
+A Spring Boot REST API starter using Java 17, Spring MVC, Spring Data JPA, and an in-memory H2 database. It includes an `Item` creation flow through the controller, service interface, service implementation, and repository.
 
-## Baseline stack
+## Run and test locally
 
-- **Web:** React + TypeScript, built with Vite
-- **API and realtime gateway:** Node.js + TypeScript, HTTP REST plus Socket.IO over WebSocket (with polling fallback)
-- **Persistence:** PostgreSQL as the source of truth
-- **Realtime scale-out:** Redis adapter and Redis-backed ephemeral coordination when multiple API instances are needed
-- **Local services:** Docker Compose for PostgreSQL and Redis
+You need Java 17 or later and Maven 3.6.3 or later. From the project root, start the API in a terminal:
 
-Keep the first deployment as a modular monolith: one API process owns HTTP routes, authentication, domain services, and socket event handlers. Split services only when load or team boundaries require it.
-
-## Repository layout
-
-```text
-apps/
-  web/                 Browser client
-  api/                 HTTP API and realtime gateway
-packages/
-  contracts/           Shared event names and request/response types
-  config/              Shared lint, TypeScript, and formatting config
-infra/
-  compose.yaml         Local PostgreSQL and Redis
-docs/
-  architecture.md
-  development-setup.md
+```powershell
+mvn spring-boot:run
 ```
 
-## Start here
+Wait until Spring Boot reports that the application has started. Keep this terminal open. Send requests from a second terminal, Postman, or an IDE HTTP client.
 
-Read [the architecture](docs/architecture.md) and [development setup](docs/development-setup.md). Before implementation, define the product domain, identity provider, authorization rules, expected concurrent connections, and deployment target. Those decisions affect event contracts, data retention, and production topology.
+### PowerShell
 
-## Core design rules
+Create an item with:
 
-1. PostgreSQL is authoritative. A successful socket emit is not a durable write.
-2. Authenticate the socket handshake and authorize each room join and command on the server.
-3. Validate every event payload at runtime; TypeScript types alone do not validate network input.
-4. Persist state changes before acknowledging them. Include an event ID or idempotency key for retryable commands.
-5. Treat presence and typing as ephemeral, expiring data; do not store them as durable domain state.
-6. Add Redis pub/sub fan-out only when running more than one API instance.
-7. Reconnect with backoff, then fetch a snapshot or replay from a cursor to recover missed updates.
+```powershell
+$response = Invoke-WebRequest `
+  -Method Post `
+  -Uri http://localhost:8080/api/items `
+  -ContentType 'application/json' `
+  -Body '{"name":"Sample item","description":"An item created through the API"}'
+
+$response.StatusCode
+$response.Headers.Location
+$response.Content
+```
+
+Expected: status `201`, a `Location` header such as `/api/items/1`, and a JSON body with the generated `id`, `name`, and `description`.
+
+Check validation by sending an empty name:
+
+```powershell
+Invoke-WebRequest `
+  -Method Post `
+  -Uri http://localhost:8080/api/items `
+  -ContentType 'application/json' `
+  -Body '{"name":"","description":"This should fail validation"}'
+```
+
+Expected: status `400 Bad Request`, because `name` cannot be blank.
+
+### Postman
+
+1. Create a request with method `POST` and URL `http://localhost:8080/api/items`.
+2. Select **Body** → **raw** → **JSON**.
+3. Enter `{ "name": "Sample item", "description": "An item created through the API" }` and select **Send**.
+4. Confirm the response status is `201 Created`, and inspect the JSON body and `Location` response header.
+
+The H2 database is in-memory and resets when the application stops. Stop the server with `Ctrl+C` in the first terminal.
+
+## Add flow
+
+`ItemController.add` calls `ItemService.add`; `ItemServiceImpl` maps the request to an `Item`, saves it through `ItemRepository`, and returns an `ItemResponse`. The controller returns that response as the body of the created HTTP response.
+
+## Requirements
+
+- Java 17 or later
+- Maven 3.6.3 or later
 
