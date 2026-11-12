@@ -1,49 +1,57 @@
 # Development setup
 
-This document describes the intended local workflow. The repository is an architecture starter; application packages and scripts need to be generated once the product scope is selected.
+## Requirements
 
-## Prerequisites
+- JDK 17 or later
+- Maven 3.6.3 or later
+- MySQL Server
 
-- Current Node.js LTS and its included package manager (pin exact versions in the project once scaffolded).
-- Docker Desktop or another Docker Compose implementation.
-- Git.
+## Prepare the database
 
-## Local services
+Create a local database:
 
-Create `infra/compose.yaml` with PostgreSQL and Redis services, named volumes, and health checks. Bind service ports to localhost only. Use a local development database password and never reuse production credentials.
-
-Example local environment values (store in an ignored `.env`, not in source control):
-
-```dotenv
-DATABASE_URL=postgresql://app:app_dev_only@localhost:5432/app
-REDIS_URL=redis://localhost:6379
-API_PORT=3000
-WEB_ORIGIN=http://localhost:5173
+```sql
+CREATE DATABASE kodnest;
 ```
 
-Commit `.env.example` with placeholders and ensure `.env` is ignored. Do not commit real credentials.
+The default connection is `jdbc:mysql://localhost:3306/kodnest` with username `root` and an empty password. Set these environment variables in the terminal before starting the application when your local setup differs:
 
-## Suggested bootstrap order
+```powershell
+$env:DB_URL = 'jdbc:mysql://localhost:3306/kodnest'
+$env:DB_USERNAME = 'root'
+$env:DB_PASSWORD = 'your-local-password'
+```
 
-1. Create a TypeScript workspace with `apps/web`, `apps/api`, and `packages/contracts`.
-2. Add strict TypeScript settings, formatting/linting, and a shared runtime schema library.
-3. Implement a health endpoint and a database migration before adding product features.
-4. Add one authenticated socket connection and a typed ping/ack event to validate the local transport.
-5. Define a real domain command, authorization rule, transaction, acknowledgement, and broadcast.
-6. Add reconnect recovery with a snapshot/cursor before treating live updates as reliable.
-7. Add Redis adapter configuration only when running multiple API replicas.
+## Start the API
 
-## Local verification checklist
+From the project root:
 
-- Web app and API start independently with documented commands.
-- Database health check passes and migrations can run repeatedly.
-- Unauthenticated socket connections are rejected.
-- Invalid payloads and unauthorized room joins are rejected.
-- A committed update is visible to another authorized client.
-- After disconnect/reconnect, the client catches up from a snapshot or cursor.
-- Shutdown closes sockets and database connections cleanly.
+```powershell
+mvn spring-boot:run
+```
 
-## Environment separation
+The API listens on `http://localhost:8080`. Hibernate updates the database schema during local development.
 
-Use separate credentials and databases for local, test, staging, and production. In deployment, inject secrets through the platform secret manager. Configure allowed web origins, connection limits, log retention, and database backups per environment. Keep schema migrations backward-compatible during rolling deployments.
+## Send a request
 
+Use Postman or another HTTP client:
+
+- Method: `POST`
+- URL: `http://localhost:8080/api/items`
+- Header: `Content-Type: application/json`
+- Body:
+
+```json
+{
+  "name": "Sample item",
+  "description": "Created locally"
+}
+```
+
+A new item returns `201 Created`. A blank name fails validation. A duplicate item name returns `409 Conflict`.
+
+## Configuration notes
+
+- Keep database credentials in environment variables; do not commit personal credentials.
+- MySQL is the configured relational database.
+- `spring.jpa.hibernate.ddl-auto=update` is suitable for this starter's local development. Use reviewed migrations for production schema changes.

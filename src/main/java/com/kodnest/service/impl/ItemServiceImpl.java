@@ -2,6 +2,7 @@ package com.kodnest.service.impl;
 
 import com.kodnest.dto.ItemRequest;
 import com.kodnest.dto.ItemResponse;
+import com.kodnest.exception.ItemAlreadyExistsException;
 import com.kodnest.model.Item;
 import com.kodnest.repository.ItemRepository;
 import com.kodnest.service.ItemService;
@@ -18,7 +19,12 @@ public class ItemServiceImpl implements ItemService {
 
     @Override
     public ItemResponse add(ItemRequest request) {
-        Item savedItem = itemRepository.save(new Item(request.name(), request.description()));
+        String name = request.name().trim();
+        if (itemRepository.existsByNameIgnoreCase(name)) {
+            throw new ItemAlreadyExistsException("An item named '" + name + "' already exists.");
+        }
+
+        Item savedItem = itemRepository.save(new Item(name, request.description()));
         return new ItemResponse(savedItem.getId(), savedItem.getName(), savedItem.getDescription());
     }
 }

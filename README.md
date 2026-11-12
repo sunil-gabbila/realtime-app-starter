@@ -1,62 +1,63 @@
-# Kodnest Spring Boot API starter
+# Kodnest Spring Boot API
 
-A Spring Boot REST API starter using Java 17, Spring MVC, Spring Data JPA, and an in-memory H2 database. It includes an `Item` creation flow through the controller, service interface, service implementation, and repository.
+A Java backend REST API built with Spring Boot and Maven. It currently supports creating items, validating requests, and returning a conflict response when an item name already exists.
 
-## Run and test locally
+## Technology stack
 
-You need Java 17 or later and Maven 3.6.3 or later. From the project root, start the API in a terminal:
+- Java 17
+- Spring Boot 4.1.2 and Spring MVC
+- Spring Data JPA with Hibernate
+- MySQL
+- Jakarta Bean Validation
+- Maven
+
+## Prerequisites
+
+- JDK 17 or later
+- Maven 3.6.3 or later
+- A running MySQL server
+
+## Configure MySQL
+
+Create the development database once:
+
+```sql
+CREATE DATABASE kodnest;
+```
+
+The default connection uses `localhost:3306`, database `kodnest`, and username `root`. Set environment variables if your local MySQL credentials or URL differ.
+
+PowerShell example:
+
+```powershell
+$env:DB_URL = 'jdbc:mysql://localhost:3306/kodnest'
+$env:DB_USERNAME = 'root'
+$env:DB_PASSWORD = 'your-local-password'
+```
+
+## Run the API
+
+From the project root, run:
 
 ```powershell
 mvn spring-boot:run
 ```
 
-Wait until Spring Boot reports that the application has started. Keep this terminal open. Send requests from a second terminal, Postman, or an IDE HTTP client.
+Spring Boot starts the API at `http://localhost:8080`. Hibernate updates the development schema when the application starts. Item data is stored in MySQL and remains after the application stops.
 
-### PowerShell
+## Create an item
 
-Create an item with:
+Send a `POST` request to `http://localhost:8080/api/items` with JSON:
 
-```powershell
-$response = Invoke-WebRequest `
-  -Method Post `
-  -Uri http://localhost:8080/api/items `
-  -ContentType 'application/json' `
-  -Body '{"name":"Sample item","description":"An item created through the API"}'
-
-$response.StatusCode
-$response.Headers.Location
-$response.Content
+```json
+{
+  "name": "Sample item",
+  "description": "An item created through the API"
+}
 ```
 
-Expected: status `201`, a `Location` header such as `/api/items/1`, and a JSON body with the generated `id`, `name`, and `description`.
-
-Check validation by sending an empty name:
-
-```powershell
-Invoke-WebRequest `
-  -Method Post `
-  -Uri http://localhost:8080/api/items `
-  -ContentType 'application/json' `
-  -Body '{"name":"","description":"This should fail validation"}'
-```
-
-Expected: status `400 Bad Request`, because `name` cannot be blank.
-
-### Postman
-
-1. Create a request with method `POST` and URL `http://localhost:8080/api/items`.
-2. Select **Body** → **raw** → **JSON**.
-3. Enter `{ "name": "Sample item", "description": "An item created through the API" }` and select **Send**.
-4. Confirm the response status is `201 Created`, and inspect the JSON body and `Location` response header.
-
-The H2 database is in-memory and resets when the application stops. Stop the server with `Ctrl+C` in the first terminal.
+You can send the request with Postman, an IDE HTTP client, or PowerShell. A successful request returns `201 Created` with the new item. A blank name is rejected by request validation. A duplicate name, ignoring case and surrounding spaces, returns `409 Conflict` with an `ITEM_ALREADY_EXISTS` error code.
 
 ## Add flow
 
-`ItemController.add` calls `ItemService.add`; `ItemServiceImpl` maps the request to an `Item`, saves it through `ItemRepository`, and returns an `ItemResponse`. The controller returns that response as the body of the created HTTP response.
-
-## Requirements
-
-- Java 17 or later
-- Maven 3.6.3 or later
-
+`ItemController` receives and validates the HTTP request, `ItemServiceImpl` applies the duplicate-name check and business logic, and `ItemRepository` uses Spring Data JPA to access MySQL. The controller returns an `ItemResponse` after the item is saved.
