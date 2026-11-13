@@ -4,9 +4,9 @@ StockWise is a small-shop inventory and sales app. The backend is Java with Spri
 
 ## Current project status
 
-- The backend supports item creation, input validation, and duplicate-name errors.
-- The frontend has the responsive StockWise workspace shell and overview placeholders.
-- Product management, stock movements, dashboard data, sales, and sign-in will be added in the planned feature branch increments.
+- The backend supports listing and creating catalog items, input validation, and duplicate-name errors.
+- The frontend has a responsive StockWise workspace, a live product catalog, and a form for adding products.
+- Stock movements, dashboard data, sales, and sign-in are planned for later feature increments.
 
 ## Technology stack
 
@@ -55,7 +55,7 @@ npm install
 npm run dev
 ```
 
-Open the Vite URL shown in the terminal, usually `http://localhost:5173`. The frontend proxies `/api` requests to the Spring Boot API at `http://localhost:8080`.
+Open the Vite URL shown in the terminal, usually `http://localhost:5173`. The frontend proxies `/api` requests to the Spring Boot API at `http://localhost:9090`.
 
 ## Run checks
 
@@ -74,7 +74,9 @@ npm run build
 
 ## Existing item endpoint
 
-Send a `POST` request to `http://localhost:8080/api/items` with JSON:
+List catalog items with `GET http://localhost:9090/api/items`. The API returns saved items in name order.
+
+Send a `POST` request to `http://localhost:9090/api/items` with JSON:
 
 ```json
 {

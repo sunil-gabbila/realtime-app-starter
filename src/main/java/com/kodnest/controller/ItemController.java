@@ -5,7 +5,9 @@ import com.kodnest.dto.ItemResponse;
 import com.kodnest.service.ItemService;
 import jakarta.validation.Valid;
 import java.net.URI;
+import java.util.List;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -19,6 +21,11 @@ public class ItemController {
 
     public ItemController(ItemService itemService) {
         this.itemService = itemService;
+    }
+
+    @GetMapping
+    public List<ItemResponse> list() {
+        return itemService.findAll();
     }
 
     @PostMapping

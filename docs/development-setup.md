@@ -30,14 +30,14 @@ From the project root:
 mvn spring-boot:run
 ```
 
-The API listens on `http://localhost:8080`. Hibernate updates the database schema during local development.
+The API listens on `http://localhost:9090`. Hibernate updates the database schema during local development.
 
 ## Send a request
 
 Use Postman or another HTTP client:
 
 - Method: `POST`
-- URL: `http://localhost:8080/api/items`
+- URL: `http://localhost:9090/api/items`
 - Header: `Content-Type: application/json`
 - Body:
 

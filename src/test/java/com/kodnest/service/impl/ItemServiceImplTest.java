@@ -40,7 +40,10 @@ class ItemServiceImplTest {
                 () -> itemService.add(new ItemRequest(" Coffee ", "Ground coffee"))
         );
 
-        assertEquals("An item named 'Coffee' already exists.", exception.getMessage());
+        assertEquals(
+                "A product named 'Coffee' already exists. Please choose a different name.",
+                exception.getMessage()
+        );
         verify(itemRepository, never()).save(any(Item.class));
     }
 

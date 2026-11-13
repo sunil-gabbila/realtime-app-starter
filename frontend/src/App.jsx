@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import './App.css'
 
 const navigation = [
@@ -17,7 +17,100 @@ const metrics = [
 
 function App() {
   const [activePage, setActivePage] = useState('overview')
+  const [products, setProducts] = useState([])
+  const [productsLoading, setProductsLoading] = useState(false)
+  const [productsError, setProductsError] = useState('')
+  const [refreshProductsKey, setRefreshProductsKey] = useState(0)
+  const [showProductForm, setShowProductForm] = useState(false)
+  const [productName, setProductName] = useState('')
+  const [productDescription, setProductDescription] = useState('')
+  const [productFormError, setProductFormError] = useState('')
+  const [productNotice, setProductNotice] = useState('')
+  const [productSaving, setProductSaving] = useState(false)
   const currentPage = navigation.find((item) => item.id === activePage)
+
+  useEffect(() => {
+    if (activePage !== 'products') return undefined
+
+    let isCurrentRequest = true
+    setProductsLoading(true)
+    setProductsError('')
+
+    fetch('/api/items')
+      .then(async (response) => {
+        const result = await response.json().catch(() => null)
+        if (!response.ok) {
+          throw new Error(result?.message || 'Products could not be loaded.')
+        }
+        if (!Array.isArray(result)) {
+          throw new Error('The product list response was not in the expected format.')
+        }
+        return result
+      })
+      .then((loadedProducts) => {
+        if (isCurrentRequest) setProducts(loadedProducts)
+      })
+      .catch((error) => {
+        if (isCurrentRequest) setProductsError(error.message || 'Products could not be loaded.')
+      })
+      .finally(() => {
+        if (isCurrentRequest) setProductsLoading(false)
+      })
+
+    return () => {
+      isCurrentRequest = false
+    }
+  }, [activePage, refreshProductsKey])
+
+  async function handleProductSubmit(event) {
+    event.preventDefault()
+    const name = productName.trim()
+    const description = productDescription.trim()
+
+    if (!name) {
+      setProductFormError('Product name is required.')
+      return
+    }
+
+    setProductSaving(true)
+    setProductFormError('')
+    setProductNotice('')
+
+    try {
+      const response = await fetch('/api/items', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, description }),
+      })
+      const result = await response.json().catch(() => null)
+
+      if (!response.ok) {
+        const fallbackMessage = response.status === 409
+          ? 'A product with this name already exists. Please choose a different name.'
+          : 'Product could not be added.'
+        throw new Error(result?.message || fallbackMessage)
+      }
+
+      setProducts((currentProducts) =>
+        [...currentProducts, result].sort((left, right) => left.name.localeCompare(right.name)),
+      )
+      setProductName('')
+      setProductDescription('')
+      setShowProductForm(false)
+      setProductNotice(`${result.name} was added to the catalog.`)
+    } catch (error) {
+      setProductFormError(error.message || 'Product could not be added. Check that the API is running and try again.')
+    } finally {
+      setProductSaving(false)
+    }
+  }
+
+  function openProductForm() {
+    setProductFormError('')
+    setProductNotice('')
+    setShowProductForm(true)
+    setActivePage('products')
+  }
 
   return (
     <div className="app-shell">
@@ -78,7 +171,7 @@ function App() {
                 <button className="button button-secondary" type="button" onClick={() => setActivePage('inventory')}>
                   <span aria-hidden="true">↕</span> Adjust stock
                 </button>
-                <button className="button button-primary" type="button" onClick={() => setActivePage('products')}>
+                <button className="button button-primary" type="button" onClick={openProductForm}>
                   <span aria-hidden="true">＋</span> Add product
                 </button>
               </div>
@@ -136,6 +229,141 @@ function App() {
                 <span>Add your first products to begin tracking stock in StockWise.</span>
               </div>
               <button className="text-button getting-link" type="button" onClick={() => setActivePage('products')}>Open products <span aria-hidden="true">→</span></button>
+            </section>
+          </section>
+        ) : activePage === 'products' ? (
+          <section className="page-content products-page" aria-labelledby="page-title">
+            <div className="page-heading">
+              <div>
+                <p className="eyebrow">PRODUCT CATALOG</p>
+                <h1 id="page-title">Products</h1>
+                <p className="page-description">Add products and keep your store catalog up to date.</p>
+              </div>
+              <div className="heading-actions">
+                <button
+                  className="button button-secondary"
+                  type="button"
+                  onClick={() => setRefreshProductsKey((key) => key + 1)}
+                  disabled={productsLoading}
+                >
+                  ↻ Refresh
+                </button>
+                <button className="button button-primary" type="button" onClick={openProductForm}>
+                  <span aria-hidden="true">＋</span> Add product
+                </button>
+              </div>
+            </div>
+
+            {productNotice && <p className="product-notice" role="status">{productNotice}</p>}
+
+            {showProductForm && (
+              <section className="panel product-form-panel" aria-labelledby="add-product-title">
+                <div className="panel-heading">
+                  <div>
+                    <h2 id="add-product-title">Add a product</h2>
+                    <p>Enter the details you want to save in your catalog.</p>
+                  </div>
+                </div>
+                <form className="product-form" onSubmit={handleProductSubmit}>
+                  <div className="product-form-grid">
+                    <label className="form-field" htmlFor="product-name">
+                      <span>Product name <span className="required-mark">*</span></span>
+                      <input
+                        autoFocus
+                        id="product-name"
+                        name="name"
+                        type="text"
+                        autoComplete="off"
+                        maxLength={120}
+                        value={productName}
+                        onChange={(event) => setProductName(event.target.value)}
+                        placeholder="e.g. Arabica coffee beans"
+                        required
+                      />
+                    </label>
+                    <label className="form-field" htmlFor="product-description">
+                      <span>Description <span className="optional-label">Optional</span></span>
+                      <textarea
+                        id="product-description"
+                        name="description"
+                        rows="3"
+                        maxLength={255}
+                        value={productDescription}
+                        onChange={(event) => setProductDescription(event.target.value)}
+                        placeholder="Add a short note about this product"
+                      />
+                    </label>
+                  </div>
+                  {productFormError && <p className="form-error" role="alert">{productFormError}</p>}
+                  <div className="form-actions">
+                    <button
+                      className="button button-secondary"
+                      type="button"
+                      onClick={() => {
+                        setShowProductForm(false)
+                        setProductFormError('')
+                      }}
+                      disabled={productSaving}
+                    >
+                      Cancel
+                    </button>
+                    <button className="button button-primary" type="submit" disabled={productSaving}>
+                      {productSaving ? 'Saving…' : 'Save product'}
+                    </button>
+                  </div>
+                </form>
+              </section>
+            )}
+
+            <section className="panel product-list-panel" aria-labelledby="catalog-title" aria-busy={productsLoading}>
+              <div className="panel-heading">
+                <div>
+                  <h2 id="catalog-title">Catalog</h2>
+                  <p>{products.length} {products.length === 1 ? 'product' : 'products'} saved</p>
+                </div>
+              </div>
+
+              {productsLoading ? (
+                <div className="products-message" role="status">Loading products…</div>
+              ) : productsError ? (
+                <div className="products-message products-error" role="alert">
+                  <strong>Couldn’t load the catalog</strong>
+                  <span>{productsError}</span>
+                  <button className="text-button" type="button" onClick={() => setRefreshProductsKey((key) => key + 1)}>
+                    Try again <span aria-hidden="true">→</span>
+                  </button>
+                </div>
+              ) : products.length === 0 ? (
+                <div className="empty-state products-empty-state">
+                  <span className="empty-icon" aria-hidden="true">▦</span>
+                  <strong>Your catalog is empty</strong>
+                  <span>Add your first product to start building your store catalog.</span>
+                  <button className="button button-primary" type="button" onClick={openProductForm}>
+                    <span aria-hidden="true">＋</span> Add first product
+                  </button>
+                </div>
+              ) : (
+                <div className="product-table-wrap">
+                  <table className="product-table">
+                    <thead>
+                      <tr>
+                        <th scope="col">Product</th>
+                        <th scope="col">Description</th>
+                        <th scope="col">Record</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {products.map((product) => (
+                        <tr key={product.id}>
+                          <td className="product-name-cell">{product.name}</td>
+                          <td className="product-description-cell">{product.description || '—'}</td>
+                          <td><span className="product-id">#{product.id}</span></td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
             </section>
           </section>
         ) : (

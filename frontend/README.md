@@ -1,6 +1,6 @@
 # StockWise frontend
 
-React and JavaScript frontend for the StockWise inventory manager. Vite runs the local development server and proxies `/api` requests to the Spring Boot backend at `http://localhost:8080`.
+React and JavaScript frontend for the StockWise inventory manager. Vite runs the local development server and proxies `/api` requests to the Spring Boot backend at `http://localhost:9090`.
 
 ## Run
 

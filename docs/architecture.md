@@ -2,13 +2,13 @@
 
 ## Scope
 
-This project is a Java Spring Boot REST API. It currently provides an item creation endpoint backed by MySQL.
+This project is a Java Spring Boot REST API backed by MySQL. It lists and creates catalog items for the React frontend.
 
 ## Technology flow
 
 ```mermaid
 flowchart LR
-  Client[HTTP client] -->|JSON over HTTP| Controller[Spring MVC controller]
+  Client[React UI or HTTP client] -->|JSON over HTTP| Controller[Spring MVC controller]
   Controller --> Service[Item service]
   Service --> Repository[Spring Data JPA repository]
   Repository -->|JPA / Hibernate| Database[(MySQL)]
@@ -16,19 +16,20 @@ flowchart LR
 
 ## Responsibilities
 
-- **Controller:** exposes `POST /api/items`, validates the request, and returns the HTTP response.
-- **Service:** checks whether an item name already exists, saves valid items, and maps them to response DTOs.
+- **Controller:** exposes `GET /api/items` and `POST /api/items`, validates create requests, and returns HTTP responses.
+- **Service:** lists items in name order, rejects duplicate names without case sensitivity, saves valid items, and maps them to response DTOs.
 - **Repository:** uses Spring Data JPA to query and save `Item` records.
 - **MySQL:** stores item data beyond the lifetime of the application process.
 - **DTOs:** define the JSON request and response shapes independently of the persistence entity.
 
-## Create item flow
+## Catalog flows
 
-1. The client sends an item name and optional description as JSON.
-2. Jakarta Bean Validation rejects a blank name.
-3. The service checks for an existing name, ignoring case and surrounding spaces.
-4. If the name exists, the API returns `409 Conflict` with code `ITEM_ALREADY_EXISTS` and a readable message.
-5. Otherwise, Spring Data JPA saves the item in MySQL and the API returns `201 Created`.
+The product page loads the catalog with `GET /api/items`. To create an item, the client sends a name and optional description as JSON to `POST /api/items`.
+
+1. Jakarta Bean Validation rejects a blank name.
+2. The service checks for an existing name.
+3. If the name exists, the API returns `409 Conflict` with code `ITEM_ALREADY_EXISTS` and a readable message.
+4. Otherwise, Spring Data JPA saves the item in MySQL and the API returns `201 Created`.
 
 ## Configuration
 
