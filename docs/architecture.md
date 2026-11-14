@@ -16,15 +16,15 @@ flowchart LR
 
 ## Responsibilities
 
-- **Controller:** exposes `GET /api/items` and `POST /api/items`, validates create requests, and returns HTTP responses.
-- **Service:** lists items in name order, rejects duplicate names without case sensitivity, saves valid items, and maps them to response DTOs.
+- **Controller:** exposes catalog list/create endpoints and a stock quantity update endpoint, validates requests, and returns HTTP responses.
+- **Service:** lists items in name order, rejects duplicate names without case sensitivity, saves valid items, updates stock quantities, and maps them to response DTOs.
 - **Repository:** uses Spring Data JPA to query and save `Item` records.
 - **MySQL:** stores item data beyond the lifetime of the application process.
 - **DTOs:** define the JSON request and response shapes independently of the persistence entity.
 
 ## Catalog flows
 
-The product page loads the catalog with `GET /api/items`. To create an item, the client sends a name and optional description as JSON to `POST /api/items`.
+The product page loads the catalog with `GET /api/items`. To create an item, the client sends a name, optional description, and starting quantity as JSON to `POST /api/items`. Inventory stock is set with `PUT /api/items/{id}/quantity` and a non-negative whole number.
 
 1. Jakarta Bean Validation rejects a blank name.
 2. The service checks for an existing name.

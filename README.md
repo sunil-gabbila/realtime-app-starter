@@ -4,8 +4,8 @@ StockWise is a small-shop inventory and sales app. The backend is Java with Spri
 
 ## Current project status
 
-- The backend supports listing and creating catalog items, input validation, and duplicate-name errors.
-- The frontend has a responsive StockWise workspace, a live product catalog, and a form for adding products.
+- The backend supports listing and creating catalog items, input validation, duplicate-name errors, and stock quantity updates.
+- The frontend has a responsive StockWise workspace, a live product catalog, and an inventory page for adjusting stock.
 - Stock movements, dashboard data, sales, and sign-in are planned for later feature increments.
 
 ## Technology stack
@@ -81,8 +81,17 @@ Send a `POST` request to `http://localhost:9090/api/items` with JSON:
 ```json
 {
   "name": "Sample item",
-  "description": "An item created through the API"
+  "description": "An item created through the API",
+  "quantity": 12
 }
 ```
 
 A successful request returns `201 Created`. A blank name is rejected by request validation. A duplicate name, ignoring case and surrounding spaces, returns `409 Conflict` with an `ITEM_ALREADY_EXISTS` error code.
+
+Update an item's stock with `PUT http://localhost:9090/api/items/{id}/quantity` and a non-negative whole number:
+
+```json
+{
+  "quantity": 14
+}
+```

@@ -20,12 +20,16 @@ public class Item {
 
     private String description;
 
+    @Column(nullable = false)
+    private int quantity;
+
     protected Item() {
     }
 
-    public Item(String name, String description) {
+    public Item(String name, String description, int quantity) {
         this.name = name;
         this.description = description;
+        this.quantity = quantity;
     }
 
     public Long getId() {
@@ -38,5 +42,13 @@ public class Item {
 
     public String getDescription() {
         return description;
+    }
+
+    public int getQuantity() {
+        return quantity;
+    }
+
+    public void setQuantity(int quantity) {
+        this.quantity = quantity;
     }
 }

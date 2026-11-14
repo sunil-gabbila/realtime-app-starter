@@ -9,4 +9,6 @@ public interface ItemService {
     ItemResponse add(ItemRequest request);
 
     List<ItemResponse> findAll();
+
+    ItemResponse updateQuantity(Long id, int quantity);
 }

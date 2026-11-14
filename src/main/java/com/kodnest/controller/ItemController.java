@@ -2,6 +2,7 @@ package com.kodnest.controller;
 
 import com.kodnest.dto.ItemRequest;
 import com.kodnest.dto.ItemResponse;
+import com.kodnest.dto.QuantityRequest;
 import com.kodnest.service.ItemService;
 import jakarta.validation.Valid;
 import java.net.URI;
@@ -11,6 +12,8 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
@@ -32,5 +35,10 @@ public class ItemController {
     public ResponseEntity<ItemResponse> add(@Valid @RequestBody ItemRequest request) {
         ItemResponse addedItem = itemService.add(request);
         return ResponseEntity.created(URI.create("/api/items/" + addedItem.id())).body(addedItem);
+    }
+
+    @PutMapping("/{id}/quantity")
+    public ItemResponse updateQuantity(@PathVariable Long id, @Valid @RequestBody QuantityRequest request) {
+        return itemService.updateQuantity(id, request.quantity());
     }
 }

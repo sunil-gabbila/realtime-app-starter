@@ -24,13 +24,15 @@ function App() {
   const [showProductForm, setShowProductForm] = useState(false)
   const [productName, setProductName] = useState('')
   const [productDescription, setProductDescription] = useState('')
+  const [productQuantity, setProductQuantity] = useState('0')
+  const [inventoryError, setInventoryError] = useState('')
   const [productFormError, setProductFormError] = useState('')
   const [productNotice, setProductNotice] = useState('')
   const [productSaving, setProductSaving] = useState(false)
   const currentPage = navigation.find((item) => item.id === activePage)
 
   useEffect(() => {
-    if (activePage !== 'products') return undefined
+    if (activePage !== 'products' && activePage !== 'inventory') return undefined
 
     let isCurrentRequest = true
     setProductsLoading(true)
@@ -66,9 +68,14 @@ function App() {
     event.preventDefault()
     const name = productName.trim()
     const description = productDescription.trim()
+    const quantity = Number(productQuantity)
 
     if (!name) {
       setProductFormError('Product name is required.')
+      return
+    }
+    if (!Number.isInteger(quantity) || quantity < 0) {
+      setProductFormError('Stock quantity must be a whole number of zero or more.')
       return
     }
 
@@ -80,7 +87,7 @@ function App() {
       const response = await fetch('/api/items', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, description }),
+        body: JSON.stringify({ name, description, quantity }),
       })
       const result = await response.json().catch(() => null)
 
@@ -96,12 +103,31 @@ function App() {
       )
       setProductName('')
       setProductDescription('')
+      setProductQuantity('0')
       setShowProductForm(false)
       setProductNotice(`${result.name} was added to the catalog.`)
     } catch (error) {
       setProductFormError(error.message || 'Product could not be added. Check that the API is running and try again.')
     } finally {
       setProductSaving(false)
+    }
+  }
+
+  async function adjustQuantity(product, change) {
+    const quantity = product.quantity + change
+    if (quantity < 0) return
+    setInventoryError('')
+    try {
+      const response = await fetch(`/api/items/${product.id}/quantity`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ quantity }),
+      })
+      const result = await response.json().catch(() => null)
+      if (!response.ok) throw new Error(result?.message || 'Stock could not be updated.')
+      setProducts((current) => current.map((item) => item.id === result.id ? result : item))
+    } catch (error) {
+      setInventoryError(error.message || 'Stock could not be updated.')
     }
   }
 
@@ -293,6 +319,10 @@ function App() {
                         placeholder="Add a short note about this product"
                       />
                     </label>
+                    <label className="form-field" htmlFor="product-quantity">
+                      <span>Starting stock</span>
+                      <input id="product-quantity" name="quantity" type="number" min="0" step="1" value={productQuantity} onChange={(event) => setProductQuantity(event.target.value)} />
+                    </label>
                   </div>
                   {productFormError && <p className="form-error" role="alert">{productFormError}</p>}
                   <div className="form-actions">
@@ -349,6 +379,7 @@ function App() {
                       <tr>
                         <th scope="col">Product</th>
                         <th scope="col">Description</th>
+                        <th scope="col">In stock</th>
                         <th scope="col">Record</th>
                       </tr>
                     </thead>
@@ -357,6 +388,7 @@ function App() {
                         <tr key={product.id}>
                           <td className="product-name-cell">{product.name}</td>
                           <td className="product-description-cell">{product.description || '—'}</td>
+                          <td>{product.quantity}</td>
                           <td><span className="product-id">#{product.id}</span></td>
                         </tr>
                       ))}
@@ -365,6 +397,14 @@ function App() {
                 </div>
               )}
             </section>
+          </section>
+        ) : activePage === 'inventory' ? (
+          <section className="page-content products-page" aria-labelledby="page-title">
+            <div className="page-heading"><div><p className="eyebrow">STOCK CONTROL</p><h1 id="page-title">Inventory</h1><p className="page-description">See current stock and record simple adjustments.</p></div></div>
+            {inventoryError && <p className="form-error" role="alert">{inventoryError}</p>}
+            {productsLoading ? <div className="products-message" role="status">Loading inventory…</div> : productsError ? <div className="products-message products-error" role="alert">{productsError}</div> : products.length === 0 ? <div className="empty-state"><strong>No products to track yet</strong><span>Add products first, then manage their stock here.</span><button className="button button-primary" type="button" onClick={openProductForm}>Add product</button></div> : (
+              <section className="panel product-list-panel"><div className="product-table-wrap"><table className="product-table"><thead><tr><th>Product</th><th>In stock</th><th>Adjust</th></tr></thead><tbody>{products.map((product) => <tr key={product.id}><td className="product-name-cell">{product.name}</td><td>{product.quantity}</td><td><button className="button button-secondary" type="button" aria-label={`Remove one ${product.name}`} disabled={product.quantity <= 0} onClick={() => adjustQuantity(product, -1)}>−</button> <button className="button button-secondary" type="button" aria-label={`Add one ${product.name}`} onClick={() => adjustQuantity(product, 1)}>＋</button></td></tr>)}</tbody></table></div></section>
+            )}
           </section>
         ) : (
           <section className="page-content placeholder-page" aria-labelledby="page-title">
